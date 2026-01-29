@@ -17,7 +17,8 @@ class AiService
         }
 
         $response = Http::withToken(config('services.groq.key'))
-            ->post(config('services.groq.url') . '/chat/completions', [
+        ->withoutVerifying()
+            ->post(config('services.groq.url'), [
                 'model' => 'openai/gpt-oss-120b',
                 'messages' => [
                     [
@@ -27,20 +28,19 @@ class AiService
                     [
                         'role' => 'user',
                         'content' => <<<PROMPT
-Tentukan category dan priority dari teks berikut.
-Jawab HANYA dalam format JSON berikut:
+                        Tentukan category dan priority dari teks berikut.
+                        Jawab HANYA dalam format JSON berikut:
 
-{
-  "category": "IT|Administrasi|Keamanan",
-  "priority": "Rendah|Sedang|Tinggi"
-}
+                        {
+                        "category": "IT|Administrasi|Keamanan",
+                        "priority": "Rendah|Sedang|Tinggi"
+                        }
 
-Teks:
-{$description}
-PROMPT
+                        Teks:
+                        {$description}
+                        PROMPT
                     ],
                 ],
-                'temperature' => 0.1,
             ]);
 
         if (!$response->successful()) {

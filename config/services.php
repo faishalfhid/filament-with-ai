@@ -35,9 +35,9 @@ return [
         ],
     ],
 
-    'groq' => [
+    'groq'=> [ 
         'key' => env('GROQ_API_KEY'),
-        'url' => 'https://api.groq.com/openai/v1',
+        'url' => 'https://api.groq.com/openai/v1/chat/completions',
     ],
 
 ];
