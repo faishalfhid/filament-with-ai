@@ -1,59 +1,191 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🚀 CI/CD Laravel via GitHub Actions (Deploy ke Hostinger via SSH)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## 📌 Arsitektur
 
-## About Laravel
+```
+Push ke GitHub
+      ↓
+GitHub Actions berjalan
+      ↓
+SSH ke Server Hostinger
+      ↓
+git pull + composer install + migrate + cache clear
+```
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+# ⚙️ Step-by-Step Setup
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 1️⃣ Persiapan Server (Hostinger)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Pastikan di server sudah terinstall:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+* ✅ Git
+* ✅ Composer
+* ✅ PHP
+* ✅ Akses SSH aktif
 
-## Laravel Sponsors
+Cek via SSH:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+git --version
+composer --version
+php -v
+```
 
-### Premium Partners
+---
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## 2️⃣ Buat File GitHub Actions
 
-## Contributing
+Di repository Laravel, buat folder:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```
+.github/workflows/
+```
 
-## Code of Conduct
+Lalu buat file:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```
+deploy.yml
+```
 
-## Security Vulnerabilities
+---
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## 3️⃣ Isi File `deploy.yml`
 
-## License
+```yaml
+name: Deploy Laravel to Hostinger
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: 22
+          script: |
+            cd domains/public_html
+            git pull origin main
+            composer install --no-dev --optimize-autoloader
+            php artisan config:clear
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+```
+
+---
+
+## 4️⃣ Tambahkan GitHub Secrets
+
+Masuk ke:
+
+```
+Repository → Settings → Secrets and variables → Actions
+```
+
+Tambahkan:
+
+| Secret Name | Isi                 |
+| ----------- | ------------------- |
+| `HOST`      | IP server Hostinger |
+| `USERNAME`  | Username SSH        |
+| `PASSWORD`  | Password SSH        |
+
+---
+
+# 🔐 Skenario Jika Repository Private
+
+Jika repository **private**, server tidak bisa langsung `git pull`.
+Solusinya gunakan **Deploy Key (SSH Key)**.
+
+---
+
+## Langkah-langkah:
+
+### 1️⃣ Generate SSH Key di Hostinger
+
+Masuk ke:
+
+```
+Hostinger → Advanced → Git
+```
+
+Generate SSH Key.
+
+---
+
+### 2️⃣ Tambahkan Deploy Key ke GitHub
+
+Masuk ke:
+
+```
+Repository → Settings → Deploy Keys → Add Deploy Key
+```
+
+* Paste public key dari Hostinger
+* Centang **Allow write access** (jika perlu)
+
+---
+
+### 3️⃣ Test dari Server
+
+Login SSH ke server lalu jalankan:
+
+```bash
+git pull origin main
+```
+
+Jika berhasil tanpa password, berarti sudah benar ✅
+
+---
+
+# 🧠 Best Practice (Disarankan)
+
+Lebih aman menggunakan **SSH Key daripada password** di GitHub Actions.
+
+Contoh jika pakai SSH private key:
+
+Tambahkan secret:
+
+```
+SSH_KEY
+```
+
+Lalu ubah workflow menjadi:
+
+```yaml
+with:
+  host: ${{ secrets.HOST }}
+  username: ${{ secrets.USERNAME }}
+  key: ${{ secrets.SSH_KEY }}
+```
+
+---
+
+# 🎯 Hasil Akhir
+
+Sekarang setiap:
+
+```
+git push origin main
+```
+
+Akan otomatis:
+
+* Connect ke server
+* Pull update terbaru
+* Install dependency
+* Clear & cache ulang config Laravel
+* Deploy selesai 🚀
